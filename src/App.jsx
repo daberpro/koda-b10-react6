@@ -124,7 +124,11 @@ function TodoCard({ title, done, project, tags, deleteFn, checkedFn }) {
     return (
         <div className="w-full shadow-sm shadow-slate-200 bg-white rounded-xl p-4 h-fit flex items-center flex-row justify-center gap-6">
             <div className="h-full w-fit items-center justify-start">
-                <input defaultChecked={done} onChange={checkChange} type="checkbox" />
+                <input
+                    defaultChecked={done}
+                    onChange={checkChange}
+                    type="checkbox"
+                />
             </div>
             <div className="grow flex justify-start items-start flex-col gap-2">
                 <div className="w-full flex items-start flex-col gap-1">
@@ -183,19 +187,25 @@ function Home({ showInputForm, todos, setTodos }) {
     return (
         <div className="py-6 px-8 w-full flex h-full justify-start items-center flex-col relative">
             <h1 className="w-full text-5xl font-bold py-6">Today</h1>
-            <div className="w-full py-4 h-fit flex justify-center items-center flex-col gap-4">
-                {todos.map((d, i) => {
-                    return (
-                        <TodoCard
-                            checkedFn={(checked) =>
-                                checkedUpdate(d.id, checked)
-                            }
-                            deleteFn={() => deleteTodo(d.id)}
-                            {...d}
-                            key={"card-" + i}
-                        />
-                    );
-                })}
+            <div className="w-full py-4 h-fit flex justify-start scrollbar-thin pb-25 overflow-y-auto items-center flex-col gap-4">
+                {todos.length === 0 && (
+                    <div className="w-full p-4 text-lg">
+                        Add new todo with clicking the right bottom button
+                    </div>
+                )}
+                {todos.length > 0 &&
+                    todos.map((d, i) => {
+                        return (
+                            <TodoCard
+                                checkedFn={(checked) =>
+                                    checkedUpdate(d.id, checked)
+                                }
+                                deleteFn={() => deleteTodo(d.id)}
+                                {...d}
+                                key={"card-" + i}
+                            />
+                        );
+                    })}
             </div>
             <button
                 onClick={() => showInputForm(true)}
