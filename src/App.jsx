@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import { useRef } from "react";
 import { useState } from "react";
-import { FaPlus } from "react-icons/fa6";
+import { FaPlus, FaTrash } from "react-icons/fa6";
 import { IoClose } from "react-icons/io5";
 
-function InputForm({ showInputForm, show }) {
+function InputForm({ showInputForm, show, updateTodosFn }) {
     const [data, setData] = useState([]);
 
     useEffect(() => {
@@ -15,20 +15,21 @@ function InputForm({ showInputForm, show }) {
     function handleSubmit(e) {
         e.preventDefault();
         const formData = new FormData(e.target);
-        localStorage.setItem(
-            "todos",
-            JSON.stringify([
-                ...data,
-                {
-                    title: formData.get("title"),
-                    project: formData.get("project"),
-                    tags: [],
-                    deadline: formData.get("deadline"),
-                    done: false,
-                },
-            ]),
-        );
+        const newData = [
+            ...data,
+            {
+                id: data.length,
+                title: formData.get("title"),
+                project: formData.get("project"),
+                tags: [],
+                deadline: formData.get("deadline"),
+                done: false,
+            },
+        ];
+        localStorage.setItem("todos", JSON.stringify(newData));
+        setData(newData);
         e.target.reset();
+        updateTodosFn(newData);
     }
 
     return (
@@ -41,6 +42,7 @@ function InputForm({ showInputForm, show }) {
         >
             <div className="w-full mb-8 justify-end flex">
                 <button
+                    type="button"
                     onClick={() => showInputForm(false)}
                     className="text-2xl cursor-pointer"
                 >
@@ -105,23 +107,34 @@ function InputForm({ showInputForm, show }) {
     );
 }
 
-function TodoCard({ title, project, tags }) {
-
-    const checkRef = useRef();
+function TodoCard({ title, done, project, tags, deleteFn, checkedFn }) {
     const titleRef = useRef();
 
-    useEffect(() => {
-
-    })
+    function checkChange(e) {
+        if (e.target.checked) {
+            titleRef.current.style.textDecorationLine = "line-through";
+            titleRef.current.style.color = "gray";
+        } else {
+            titleRef.current.style.textDecorationLine = "none";
+            titleRef.current.style.color = "black";
+        }
+        checkedFn(e.target.checked);
+    }
 
     return (
         <div className="w-full shadow-sm shadow-slate-200 bg-white rounded-xl p-4 h-fit flex items-center flex-row justify-center gap-6">
             <div className="h-full w-fit items-center justify-start">
-                <input ref={checkRef} type="checkbox" />
+                <input defaultChecked={done} onChange={checkChange} type="checkbox" />
             </div>
             <div className="grow flex justify-start items-start flex-col gap-2">
                 <div className="w-full flex items-start flex-col gap-1">
-                    <span ref={titleRef} className="text-black text-xl font-semibold">
+                    <span
+                        ref={titleRef}
+                        className={
+                            "text-black text-xl font-semibold " +
+                            (done ? "line-through text-gray-500" : "")
+                        }
+                    >
                         {title}
                     </span>
                     <span className="text-slate-600">{project}</span>
@@ -134,26 +147,56 @@ function TodoCard({ title, project, tags }) {
                     );
                 })}
             </div>
+            <div className="h-full items-center flex">
+                <FaTrash
+                    onClick={deleteFn}
+                    className="cursor-pointer text-red-400"
+                />
+            </div>
         </div>
     );
 }
 
-function Home({ showInputForm }) {
-    const [todos, setTodos] = useState([]);
-    useEffect(() => {
-        const localStrg = localStorage.getItem("todos");
-        setTodos(JSON.parse(localStrg || "[]"));
-    }, []);
+function Home({ showInputForm, todos, setTodos }) {
+    function deleteTodo(id) {
+        const tds = [...todos];
+        const index = tds.findIndex((t) => t.id === id);
+        tds.splice(index, 1);
+        setTodos(tds);
+        localStorage.setItem("todos", JSON.stringify(tds));
+    }
+
+    function checkedUpdate(id, checked) {
+        localStorage.setItem(
+            "todos",
+            JSON.stringify(
+                todos.map((d) => {
+                    if (d.id === id) {
+                        d.done = checked;
+                    }
+                    return d;
+                }),
+            ),
+        );
+    }
 
     return (
         <div className="py-6 px-8 w-full flex h-full justify-start items-center flex-col relative">
             <h1 className="w-full text-5xl font-bold py-6">Today</h1>
-            <div className="w-full py-4 h-fit flex justify-center items-center flex-col gap-4"></div>
-            {
-                todos.map((d, i) => {
-                    return <TodoCard {...d} key={"card-" + i} />;
-                })
-            }
+            <div className="w-full py-4 h-fit flex justify-center items-center flex-col gap-4">
+                {todos.map((d, i) => {
+                    return (
+                        <TodoCard
+                            checkedFn={(checked) =>
+                                checkedUpdate(d.id, checked)
+                            }
+                            deleteFn={() => deleteTodo(d.id)}
+                            {...d}
+                            key={"card-" + i}
+                        />
+                    );
+                })}
+            </div>
             <button
                 onClick={() => showInputForm(true)}
                 className="font-bold text-3xl cursor-pointer flex justify-center items-center absolute right-8 bottom-8 w-[70px] h-[70px] rounded-2xl bg-blue-400 text-white"
@@ -166,12 +209,26 @@ function Home({ showInputForm }) {
 
 export default function App() {
     const [showInputForm, setShowInputForm] = useState(false);
+    const [todos, setTodos] = useState([]);
+    useEffect(() => {
+        const localStrg = localStorage.getItem("todos");
+        setTodos(JSON.parse(localStrg || "[]"));
+    }, []);
+
+    function updateTodos(newTodos) {
+        setTodos(newTodos);
+    }
 
     return (
         <div className="w-full h-fit items-center flex-center flex flex-col">
             <div className="w-110 overflow-hidden shadow-lg relative bg-slate-100 rounded-4xl h-175 flex justify-start flex-col items-center">
-                <Home showInputForm={setShowInputForm} />
+                <Home
+                    setTodos={setTodos}
+                    todos={todos}
+                    showInputForm={setShowInputForm}
+                />
                 <InputForm
+                    updateTodosFn={updateTodos}
                     showInputForm={setShowInputForm}
                     show={showInputForm}
                 />
