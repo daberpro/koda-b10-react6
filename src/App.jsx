@@ -3,6 +3,7 @@ import { useRef } from "react";
 import { useState } from "react";
 import { FaPlus, FaTrash } from "react-icons/fa6";
 import { IoClose } from "react-icons/io5";
+import { useLocalStorage } from "./lib/hooks/localStorage";
 
 function InputForm({ showInputForm, show, updateTodosFn }) {
     const [data, setData] = useState([]);
@@ -167,21 +168,15 @@ function Home({ showInputForm, todos, setTodos }) {
         const index = tds.findIndex((t) => t.id === id);
         tds.splice(index, 1);
         setTodos(tds);
-        localStorage.setItem("todos", JSON.stringify(tds));
     }
 
     function checkedUpdate(id, checked) {
-        localStorage.setItem(
-            "todos",
-            JSON.stringify(
-                todos.map((d) => {
-                    if (d.id === id) {
-                        d.done = checked;
-                    }
-                    return d;
-                }),
-            ),
-        );
+        setTodos(todos.map((d) => {
+            if (d.id === id) {
+                d.done = checked;
+            }
+            return d;
+        }));
     }
 
     return (
@@ -218,12 +213,16 @@ function Home({ showInputForm, todos, setTodos }) {
 }
 
 export default function App() {
+
+
+    const [todos, setTodos] = useLocalStorage("todos", []);
     const [showInputForm, setShowInputForm] = useState(false);
-    const [todos, setTodos] = useState([]);
-    useEffect(() => {
-        const localStrg = localStorage.getItem("todos");
-        setTodos(JSON.parse(localStrg || "[]"));
-    }, []);
+
+    // const [todos, setTodos] = useState([]);
+    // useEffect(() => {
+    //     const localStrg = localStorage.getItem("todos");
+    //     setTodos(JSON.parse(localStrg || "[]"));
+    // }, []);
 
     function updateTodos(newTodos) {
         setTodos(newTodos);
